@@ -1,4 +1,4 @@
-// Focus & Finish ToC Game - Browser version (simplified)
+// Focus & Finish ToC Game - Browser version (with interactive P balancing)
 
 // Canvas setup
 const canvas = document.getElementById("gameCanvas");
@@ -49,6 +49,9 @@ let spawnTimer = 0;
 let totalTime = 0;
 
 let lastTimestamp = performance.now();
+
+// For interactive P balancing
+let selectedP = null;  // name of first P clicked, e.g. "P2"
 
 // --------- Layout creation (similar to Python version) ---------
 
@@ -381,6 +384,12 @@ function draw() {
   });
 
   labels.forEach(l => {
+    // highlight selected P header
+    if (l.name === selectedP) {
+      ctx.fillStyle = "#333366";
+      ctx.fillRect(l.x, l.y, l.w, l.h);
+    }
+    ctx.strokeStyle = "white";
     ctx.strokeRect(l.x, l.y, l.w, l.h);
     ctx.fillStyle = l.name.startsWith("P") ? "cyan" : "white";
     ctx.font = "16px Consolas";
@@ -432,6 +441,19 @@ function draw() {
   });
 }
 
+// --------- Helpers ---------
+
+function resetSimulation() {
+  createLayout();
+  chips = [];
+  spawnTimer = 0;
+  totalTime = 0;
+  spawnBlocked = false;
+  p1PassesSinceBlock = 0;
+  finishedCount = 0;
+  simulationRunning = false;
+}
+
 // --------- Main loop ---------
 
 function loop(timestamp) {
@@ -450,6 +472,45 @@ startBtn.addEventListener("click", () => {
 
 stopBtn.addEventListener("click", () => {
   simulationRunning = false;
+});
+
+// Click handling for P headers (P1..P6)
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  let clickedP = null;
+  for (const l of labels) {
+    if (!l.name.startsWith("P")) continue;
+    if (mx >= l.x && mx <= l.x + l.w && my >= l.y && my <= l.y + l.h) {
+      clickedP = l.name;
+      break;
+    }
+  }
+
+  if (!clickedP) return;
+
+  // First selection
+  if (selectedP === null) {
+    selectedP = clickedP;
+    return;
+  }
+
+  // Clicking same P again cancels
+  if (clickedP === selectedP) {
+    selectedP = null;
+    return;
+  }
+
+  // Move 1 box from selectedP to clickedP, enforcing min 1 per P
+  if (P_BOXES[selectedP] > 1) {
+    P_BOXES[selectedP] -= 1;
+    P_BOXES[clickedP] += 1;
+    resetSimulation();
+  }
+
+  selectedP = null;
 });
 
 // Init
