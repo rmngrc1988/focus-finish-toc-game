@@ -477,8 +477,13 @@ stopBtn.addEventListener("click", () => {
 // Click handling for P headers (P1..P6)
 canvas.addEventListener("click", (e) => {
   const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
+
+  // Scale mouse position into canvas coordinate space
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
 
   let clickedP = null;
   for (const l of labels) {
